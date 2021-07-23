@@ -1,19 +1,41 @@
+/**
+ * Updates the designated Profile row with the checked Cumulative Modifiers (bonusselections)
+ *
+ * @param {string} rowId The Profile row ID
+ */
 async function updateProfile(rowId) {
   const bonusIds = (
     await getAttrsAsync(["repeating_profiles_bonus_ids"])
   ).repeating_profiles_bonus_ids.split(",");
-  console.log(bonusIds);
+  console.log("updateProfile bonusIds", bonusIds);
+
+  const bonusProfileIdsKeys = bonusIds.map(
+    (id) => `repeating_bonuses_${id}_profile_ids`
+  );
   const bonusNameKeys = bonusIds.map((id) => `repeating_bonuses_${id}_name`);
-  const a = await getAttrsAsync(bonusNameKeys);
-  const names = Object.values(a).reduce(
+  const a = await getAttrsAsync(bonusNameKeys.concat(bonusProfileIdsKeys));
+  const names = bonusNameKeys.reduce(
     // using Em Space https://www.compart.com/en/unicode/U+2003
-    (acc, cur) => `${acc}     ✔︎${cur}`.trim(),
+    (acc, cur) => `${acc}     ✔︎${a[cur]}`.trim(),
     ""
   );
-  await setAttrsAsync({
-    [`repeating_profiles_${rowId}_bonus_names`]: names,
-    [`repeating_profiles_${rowId}_rowid`]: `repeating_profiles_${rowId}_`,
+  const attrs = {};
+  bonusProfileIdsKeys.forEach((key) => {
+    const jsonProfileIds = a[key];
+    console.log("updateProfile jsonProfileIds", jsonProfileIds);
+    const profileIds = jsonProfileIds ? JSON.parse(jsonProfileIds) : [];
+    profileIds.push(rowId);
+    // when do we remove?
+    attrs[key] = JSON.stringify(profileIds);
   });
+  attrs[`repeating_profiles_${rowId}_bonus_names`] = names;
+  attrs[`repeating_profiles_${rowId}_rowid`] = `repeating_profiles_${rowId}_`;
+  console.log("updateProfile", attrs);
+  await setAttrsAsync(attrs);
+  // await setAttrsAsync({
+  //   [`repeating_profiles_${rowId}_bonus_names`]: names,
+  //   [`repeating_profiles_${rowId}_rowid`]: `repeating_profiles_${rowId}_`,
+  // });
   await combineBonuses(bonusIds, `repeating_profiles_${rowId}`);
 }
 
