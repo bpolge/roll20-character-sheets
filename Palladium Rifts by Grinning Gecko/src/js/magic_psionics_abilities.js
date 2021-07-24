@@ -180,3 +180,38 @@ on(
 on("change:psionic_ability", (e) => {
   console.log("change:psionic_ability", e);
 });
+
+function alphabeticalVal(a, b) {
+  if (a.val === b.val) {
+    return 0;
+  }
+  return a.val > b.val ? 1 : -1;
+}
+
+async function sortByName(section) {
+  const sectionIds = await getSectionIDsOrderedAsync(section);
+  console.log(sectionIds);
+  const nameKeys = sectionIds.map((id) => `repeating_${section}_${id}_name`);
+  const names = await getAttrsAsync(nameKeys);
+  console.log(names);
+  // sort
+  const namesArray = Object.entries(names).map(([key, val]) => ({ key, val }));
+  console.log(namesArray);
+  const sortedNamesArray = namesArray.sort(alphabeticalVal);
+  console.log(sortedNamesArray);
+  let reporder = "";
+  sortedNamesArray.forEach((obj, idx) => {
+    const [r, s, sectionId] = obj.key.split("_");
+    reporder += sectionId;
+    if (idx !== sortedNamesArray.length - 1) {
+      reporder += ",";
+    }
+  });
+  console.log(reporder);
+  await setAttrsAsync({ [`_reporder_repeating_powersabilities`]: reporder });
+}
+
+on("clicked:powersabilities_sortname", async (e) => {
+  console.log("clicked:powersabilities_sortname", e);
+  await sortByName("powersabilities");
+});
